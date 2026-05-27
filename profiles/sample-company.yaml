@@ -1,0 +1,94 @@
+{
+  "company": "Sample Company",
+  "windows": {
+    "enableRdp": true,
+    "power": {
+      "acSleepTimeoutMinutes": 0
+    },
+    "bitLocker": {
+      "enable": false
+    }
+  },
+  "departments": [
+    {
+      "id": "office",
+      "displayName": "Office",
+      "domain": {
+        "name": "corp.example.local",
+        "ouPath": "OU=Workstations,DC=corp,DC=example,DC=local"
+      },
+      "software": [
+        "chrome",
+        "7zip",
+        "adobe-reader",
+        "openvpn"
+      ]
+    },
+    {
+      "id": "warehouse",
+      "displayName": "Warehouse",
+      "domain": {
+        "name": "corp.example.local",
+        "ouPath": "OU=Warehouse,OU=Workstations,DC=corp,DC=example,DC=local"
+      },
+      "software": [
+        "chrome",
+        "7zip"
+      ]
+    }
+  ],
+  "software": [
+    {
+      "id": "chrome",
+      "name": "Google Chrome",
+      "installer": {
+        "type": "msi",
+        "path": "../installers/chrome/GoogleChromeStandaloneEnterprise64.msi",
+        "arguments": "/qn /norestart"
+      },
+      "detection": {
+        "type": "registry",
+        "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe"
+      }
+    },
+    {
+      "id": "7zip",
+      "name": "7-Zip",
+      "installer": {
+        "type": "msi",
+        "path": "../installers/7zip/7z.msi",
+        "arguments": "/qn /norestart"
+      },
+      "detection": {
+        "type": "file",
+        "path": "C:\\Program Files\\7-Zip\\7zFM.exe"
+      }
+    },
+    {
+      "id": "adobe-reader",
+      "name": "Adobe Reader",
+      "installer": {
+        "type": "exe",
+        "path": "../installers/adobe-reader/AcroRdrDC.exe",
+        "arguments": "/sAll /rs /rps /msi EULA_ACCEPT=YES"
+      },
+      "detection": {
+        "type": "file",
+        "path": "C:\\Program Files\\Adobe\\Acrobat DC\\Acrobat\\Acrobat.exe"
+      }
+    },
+    {
+      "id": "openvpn",
+      "name": "OpenVPN Community",
+      "installer": {
+        "type": "msi",
+        "path": "../installers/openvpn/OpenVPN.msi",
+        "arguments": "/qn /norestart"
+      },
+      "detection": {
+        "type": "file",
+        "path": "C:\\Program Files\\OpenVPN\\bin\\openvpn.exe"
+      }
+    }
+  ]
+}

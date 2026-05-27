@@ -1,0 +1,58 @@
+# Runtime output
+logs/*
+!logs/.gitkeep
+.autoinstaller/
+*.log
+*.tmp
+
+# Local installer payloads
+installers/*
+!installers/.gitkeep
+*.msi
+*.exe
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+*.cab
+*.zip
+*.7z
+*.rar
+
+# Local/private profiles and secrets
+profiles/local*.yaml
+profiles/local*.yml
+profiles/local*.json
+profiles/*secret*
+profiles/*private*
+*.key
+*.pem
+*.pfx
+*.p12
+*.cer
+*.crt
+*.ovpn
+*.rdp
+auth.json
+secrets.json
+credentials.json
+
+# PowerShell/module artifacts
+*.ps1xml
+*.pssc
+*.psrc
+*.psd1.tmp
+*.psm1.tmp
+PowerShell_transcript*.txt
+
+# Reports and exports
+*.csv
+*.html
+*.xlsx
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/

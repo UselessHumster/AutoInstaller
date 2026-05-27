@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "statusValues": [
+    "Pending",
+    "Running",
+    "Success",
+    "Failed",
+    "Skipped",
+    "Needs reboot"
+  ]
+}
