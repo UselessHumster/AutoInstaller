@@ -1,12 +1,17 @@
 [CmdletBinding()]
 param(
-    [string]$ProfilePath = (Join-Path $PSScriptRoot '../profiles/sample-company.yaml')
+    [string]$ProfilePath = ''
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
+
+if ([string]::IsNullOrWhiteSpace($ProfilePath)) {
+    $ProfilePath = Join-Path $root 'profiles/sample-company.yaml'
+}
+
 $required = @(
     'Start-AutoInstaller.ps1',
     'modules/AutoInstaller.Config.psm1',

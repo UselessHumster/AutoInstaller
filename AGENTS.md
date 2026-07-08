@@ -63,6 +63,11 @@ For Windows behavior, test at least:
 - non-admin launch elevation.
 - domain join only in a controlled test domain.
 
+## Git Workflow
+
+- For agent-made repository changes, create a feature branch, commit the changes, push the branch, and open a pull request when repository access allows it.
+- After agent changes are pushed, Windows test machines should update via `git pull` instead of manually copying patched files.
+
 ## Generated Files
 
 - Do not commit generated logs under `logs/`.

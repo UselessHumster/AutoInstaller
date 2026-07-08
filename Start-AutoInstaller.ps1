@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$ProfilePath = (Join-Path $PSScriptRoot 'profiles/sample-company.yaml'),
+    [string]$ProfilePath = '',
     [string]$DepartmentId = '',
     [string]$ComputerName = '',
     [switch]$NoUi,
@@ -9,6 +9,10 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+if ([string]::IsNullOrWhiteSpace($ProfilePath)) {
+    $ProfilePath = Join-Path $PSScriptRoot 'profiles/sample-company.yaml'
+}
 
 $moduleRoot = Join-Path $PSScriptRoot 'modules'
 Import-Module (Join-Path $moduleRoot 'AutoInstaller.Config.psm1') -Force
