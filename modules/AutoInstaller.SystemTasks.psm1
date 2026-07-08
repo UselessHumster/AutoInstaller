@@ -17,7 +17,12 @@ function Enable-AIRemoteDesktop {
 
     Invoke-AICommand -Context $Context -Description 'Enable Remote Desktop' -ScriptBlock {
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
-        Enable-NetFirewallRule -DisplayGroup 'Remote Desktop' | Out-Null
+        $firewallRules = @(Get-NetFirewallRule -Name 'RemoteDesktop*' -ErrorAction SilentlyContinue)
+        if ($firewallRules.Count -eq 0) {
+            throw 'Remote Desktop firewall rules were not found.'
+        }
+
+        $firewallRules | Enable-NetFirewallRule | Out-Null
     }
 }
 
