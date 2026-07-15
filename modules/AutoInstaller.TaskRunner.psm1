@@ -31,10 +31,11 @@ function New-AITaskPlan {
     if ($Context.Profile.windows.enableRdp) {
         $tasks.Add((New-AITask -Id 'windows.rdp' -Name 'Enable Remote Desktop' -Group 'Windows' -Action { Enable-AIRemoteDesktop -Context $Context }))
     }
-    $tasks.Add((New-AITask -Id 'windows.rename' -Name 'Rename computer' -Group 'Windows' -Action { Rename-AIComputer -Context $Context }))
-
     if ($Context.Department.domain -and $Context.Department.domain.name) {
         $tasks.Add((New-AITask -Id 'domain.join' -Name 'Join domain' -Group 'Domain' -Action { Join-AIDomain -Context $Context }))
+    }
+    else {
+        $tasks.Add((New-AITask -Id 'windows.rename' -Name 'Rename computer' -Group 'Windows' -Action { Rename-AIComputer -Context $Context }))
     }
 
     foreach ($softwareId in @($Context.Department.software)) {
