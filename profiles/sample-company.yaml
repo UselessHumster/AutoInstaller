@@ -6,7 +6,12 @@
       "acSleepTimeoutMinutes": 0
     },
     "bitLocker": {
-      "enable": false
+      "enable": false,
+      "inventoryApi": {
+        "enabled": false,
+        "url": "https://invent.datacloud.msk.ru/api/bitlocker-keys",
+        "apiKey": ""
+      }
     }
   },
   "departments": [
