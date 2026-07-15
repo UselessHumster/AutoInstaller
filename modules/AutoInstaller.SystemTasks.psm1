@@ -80,7 +80,7 @@ function Save-AIBitLockerRecoveryFile {
 
     $safeComputerName = ConvertTo-AISafeFileName -Value $ComputerName
     $safeSerialNumber = ConvertTo-AISafeFileName -Value $SerialNumber
-    $fileName = "BitLocker-$safeComputerName-$safeSerialNumber.txt"
+    $fileName = "$safeComputerName $safeSerialNumber.txt"
     $filePath = Join-Path $desktopPath $fileName
 
     $content = @(
