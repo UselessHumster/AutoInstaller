@@ -54,6 +54,7 @@ function Join-AIDomain {
     $domainName = [string]$domain.name
     $ouPath = [string]$domain.ouPath
     $credential = $Context.DomainCredential
+    $targetName = $Context.ComputerName
 
     Invoke-AICommand -Context $Context -Description "Join domain $domainName" -ScriptBlock {
         $params = @{
@@ -63,6 +64,9 @@ function Join-AIDomain {
         }
         if (-not [string]::IsNullOrWhiteSpace($ouPath)) {
             $params.OUPath = $ouPath
+        }
+        if (-not [string]::IsNullOrWhiteSpace($targetName) -and $env:COMPUTERNAME -ne $targetName) {
+            $params.NewName = $targetName
         }
         Add-Computer @params
     }
