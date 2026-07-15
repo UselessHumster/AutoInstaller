@@ -70,35 +70,38 @@ function Install-AISoftware {
     $continueWhenDetected = [bool](Get-AIPropertyValue -InputObject $Software.installer -Name 'continueWhenDetected' -DefaultValue $false)
     $stopProcessesOnDetected = @(Get-AIPropertyValue -InputObject $Software.installer -Name 'stopProcessesOnDetected' -DefaultValue @())
     $timeoutSeconds = [int](Get-AIPropertyValue -InputObject $Software.installer -Name 'timeoutSeconds' -DefaultValue 0)
+    $copyToTemp = [bool](Get-AIPropertyValue -InputObject $Software.installer -Name 'copyToTemp' -DefaultValue $false)
 
     Invoke-AICommand -Context $Context -Description "Install $($Software.name)" -ScriptBlock {
         $startedAt = Get-Date
+        $effectiveInstallerPath = $installerPath
+        $tempInstallerPath = $null
 
-        if ($kind -eq 'msi') {
-            $msiArgs = "/i `"$installerPath`" $arguments"
-            $process = Start-Process -FilePath 'msiexec.exe' -ArgumentList $msiArgs -PassThru
-        }
-        else {
-            $process = Start-Process -FilePath $installerPath -ArgumentList $arguments -PassThru
-        }
-
-        while (-not $process.HasExited) {
-            Start-Sleep -Seconds 1
-
-            if ($continueWhenDetected -and (Test-AISoftwareInstalled -Software $Software)) {
-                foreach ($processName in $stopProcessesOnDetected) {
-                    Get-Process -Name ([string]$processName) -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        try {
+            if ($copyToTemp) {
+                $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'AutoInstaller\Installers'
+                if (-not (Test-Path -LiteralPath $tempRoot)) {
+                    New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
                 }
 
-                if (-not $process.HasExited) {
-                    Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-                }
-
-                return "Installed: $($Software.name)"
+                $installerFileName = Split-Path -Leaf $installerPath
+                $tempInstallerPath = Join-Path $tempRoot ("{0}-{1}" -f ([guid]::NewGuid().ToString('N')), $installerFileName)
+                Copy-Item -LiteralPath $installerPath -Destination $tempInstallerPath -Force
+                $effectiveInstallerPath = $tempInstallerPath
             }
 
-            if ($timeoutSeconds -gt 0 -and ((Get-Date) - $startedAt).TotalSeconds -ge $timeoutSeconds) {
-                if (Test-AISoftwareInstalled -Software $Software) {
+            if ($kind -eq 'msi') {
+                $msiArgs = "/i `"$effectiveInstallerPath`" $arguments"
+                $process = Start-Process -FilePath 'msiexec.exe' -ArgumentList $msiArgs -PassThru
+            }
+            else {
+                $process = Start-Process -FilePath $effectiveInstallerPath -ArgumentList $arguments -PassThru
+            }
+
+            while (-not $process.HasExited) {
+                Start-Sleep -Seconds 1
+
+                if ($continueWhenDetected -and (Test-AISoftwareInstalled -Software $Software)) {
                     foreach ($processName in $stopProcessesOnDetected) {
                         Get-Process -Name ([string]$processName) -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
                     }
@@ -110,20 +113,39 @@ function Install-AISoftware {
                     return "Installed: $($Software.name)"
                 }
 
-                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-                throw "Installer timed out after $timeoutSeconds seconds: $($Software.name)"
+                if ($timeoutSeconds -gt 0 -and ((Get-Date) - $startedAt).TotalSeconds -ge $timeoutSeconds) {
+                    if (Test-AISoftwareInstalled -Software $Software) {
+                        foreach ($processName in $stopProcessesOnDetected) {
+                            Get-Process -Name ([string]$processName) -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+                        }
+
+                        if (-not $process.HasExited) {
+                            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+                        }
+
+                        return "Installed: $($Software.name)"
+                    }
+
+                    Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+                    throw "Installer timed out after $timeoutSeconds seconds: $($Software.name)"
+                }
+            }
+
+            if ($process.ExitCode -notin @(0, 3010, 1641)) {
+                throw "Installer failed with exit code $($process.ExitCode): $($Software.name)"
+            }
+
+            if ($process.ExitCode -in @(3010, 1641)) {
+                return "Installed, reboot required: $($Software.name)"
+            }
+
+            return "Installed: $($Software.name)"
+        }
+        finally {
+            if ($tempInstallerPath -and (Test-Path -LiteralPath $tempInstallerPath)) {
+                Remove-Item -LiteralPath $tempInstallerPath -Force -ErrorAction SilentlyContinue
             }
         }
-
-        if ($process.ExitCode -notin @(0, 3010, 1641)) {
-            throw "Installer failed with exit code $($process.ExitCode): $($Software.name)"
-        }
-
-        if ($process.ExitCode -in @(3010, 1641)) {
-            return "Installed, reboot required: $($Software.name)"
-        }
-
-        return "Installed: $($Software.name)"
     }
 }
 
