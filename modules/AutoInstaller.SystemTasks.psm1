@@ -55,6 +55,13 @@ function Get-AIBitLockerRecoveryPassword {
     return $null
 }
 
+function Test-AIBitLockerRecoveryPasswordFormat {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RecoveryKey)
+
+    return $RecoveryKey -match '^\d{6}(-\d{6}){7}$'
+}
+
 function Save-AIBitLockerRecoveryFile {
     [CmdletBinding()]
     param(
@@ -91,24 +98,48 @@ function Send-AIBitLockerInventoryRecord {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$ApiUrl,
-        [string]$ApiKey,
-        [Parameter(Mandatory)][string]$ComputerName,
+        [Parameter(Mandatory)][string]$ApiKey,
         [Parameter(Mandatory)][string]$SerialNumber,
         [Parameter(Mandatory)][string]$RecoveryKey
     )
 
-    $headers = @{}
-    if (-not [string]::IsNullOrWhiteSpace($ApiKey)) {
-        $headers['X-API-Key'] = $ApiKey
+    if ([string]::IsNullOrWhiteSpace($ApiKey)) {
+        throw 'BitLocker inventory API is enabled, but no API key is configured.'
+    }
+
+    if (-not (Test-AIBitLockerRecoveryPasswordFormat -RecoveryKey $RecoveryKey)) {
+        throw 'BitLocker recovery key does not match the expected eight-group recovery password format.'
     }
 
     $body = @{
-        computerName = $ComputerName
-        serialNumber = $SerialNumber
-        recoveryKey  = $RecoveryKey
+        serial_number = $SerialNumber
+        bitlocker_key = $RecoveryKey
     } | ConvertTo-Json -Depth 4
 
-    Invoke-RestMethod -Uri $ApiUrl -Method Post -Headers $headers -ContentType 'application/json' -Body $body | Out-Null
+    $headers = @{
+        'X-API-Key' = $ApiKey
+    }
+
+    try {
+        $response = Invoke-WebRequest -Uri $ApiUrl -Method Post -Headers $headers -ContentType 'application/json' -Body $body -UseBasicParsing
+        if ($response.StatusCode -notin @(200, 201)) {
+            throw "BitLocker inventory API returned unexpected HTTP status $($response.StatusCode)."
+        }
+    }
+    catch {
+        $response = $_.Exception.Response
+        if (-not $response) {
+            throw
+        }
+
+        $statusCode = [int]$response.StatusCode
+        switch ($statusCode) {
+            401 { throw 'BitLocker inventory API rejected the request with HTTP 401. Check the API key.' }
+            409 { throw 'BitLocker inventory API returned HTTP 409. Equipment belongs to another company; do not move it automatically.' }
+            422 { throw 'BitLocker inventory API returned HTTP 422. Check that the payload contains a valid BitLocker Recovery Password with eight six-digit groups.' }
+            default { throw "BitLocker inventory API returned HTTP $statusCode." }
+        }
+    }
 }
 
 function Set-AIPowerPolicy {
@@ -230,7 +261,7 @@ function Enable-AIBitLocker {
                 throw 'BitLocker inventory API is enabled, but no URL is configured.'
             }
 
-            Send-AIBitLockerInventoryRecord -ApiUrl $inventoryApiUrl -ApiKey $inventoryApiKey -ComputerName $computerName -SerialNumber $serialNumber -RecoveryKey $recoveryKey
+            Send-AIBitLockerInventoryRecord -ApiUrl $inventoryApiUrl -ApiKey $inventoryApiKey -SerialNumber $serialNumber -RecoveryKey $recoveryKey
             $inventoryStatus = 'inventory API submitted'
         }
 
