@@ -10,6 +10,9 @@ The included sample is JSON-compatible YAML, so it works even when `ConvertFrom-
 - `windows.enableRdp`: enables Remote Desktop and firewall rules.
 - `windows.power.acSleepTimeoutMinutes`: AC sleep timeout. Use `0` to disable sleep on AC power.
 - `windows.bitLocker.enable`: enables BitLocker on the system drive.
+- `windows.bitLocker.inventoryApi.enabled`: optional. Sends computer name, serial number, and recovery key to an inventory API when enabled.
+- `windows.bitLocker.inventoryApi.url`: inventory API endpoint.
+- `windows.bitLocker.inventoryApi.apiKey`: runtime API key placeholder. Keep real secrets out of committed profiles.
 - `departments`: department-specific domain and software selection.
 - `software`: installer catalog.
 
