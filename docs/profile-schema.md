@@ -28,5 +28,8 @@ The included sample is JSON-compatible YAML, so it works even when `ConvertFrom-
 - `installer.type`: `msi` or `exe`.
 - `installer.path`: relative path from the profile file.
 - `installer.arguments`: silent install arguments.
+- `installer.continueWhenDetected`: optional boolean. When true, the task can finish once detection succeeds even if the installer process is still running.
+- `installer.timeoutSeconds`: optional maximum installer runtime. Use `0` or omit it to wait without a timeout.
+- `installer.stopProcessesOnDetected`: optional process names to stop after successful detection, useful for installers that launch a first-run UI.
 - `detection.type`: `file`, `registry`, or `command`.
 - `detection.path` or `detection.command`: installed-state check.
