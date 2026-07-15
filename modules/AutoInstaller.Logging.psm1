@@ -36,6 +36,11 @@ function Write-AILog {
     $line = '{0} [{1}] {2}' -f (Get-Date -Format 's'), $Level, $Message
     Add-Content -LiteralPath $Logger.LogFile -Value $line
     Write-Host $line
+
+    $onLog = $Logger.PSObject.Properties['OnLog']
+    if ($onLog -and $onLog.Value) {
+        & $onLog.Value -Line $line -Level $Level -Message $Message
+    }
 }
 
 function Export-AIRunReport {

@@ -91,17 +91,38 @@ function Start-AIWinFormsUi {
     $form.Controls.Add($closeButton)
 
     $runButton.Add_Click({
+        $uiLogger = $null
         try {
             $runButton.Enabled = $false
+            $output.Clear()
+
+            $uiLogger = [pscustomobject]@{
+                RunDirectory = $Logger.RunDirectory
+                LogFile      = $Logger.LogFile
+                ReportFile   = $Logger.ReportFile
+                OnLog        = {
+                    param(
+                        [Parameter(Mandatory)][string]$Line,
+                        [string]$Level,
+                        [string]$Message
+                    )
+
+                    $output.AppendText($Line + [Environment]::NewLine)
+                    $output.SelectionStart = $output.TextLength
+                    $output.ScrollToCaret()
+                    $output.Refresh()
+                    [System.Windows.Forms.Application]::DoEvents()
+                }
+            }
+
             $context = New-AIRunContext -Profile $Profile -ProfilePath $ProfilePath -DepartmentId ([string]$departmentBox.SelectedItem) -ComputerName $computerNameBox.Text -DryRun:$($dryRunCheck.Checked)
             $tasks = New-AITaskPlan -Context $context
-            Invoke-AITaskPlan -Context $context -Tasks $tasks -Logger $Logger
-            Export-AIRunReport -Context $context -Tasks $tasks -Logger $Logger
-            $output.Text = ($tasks | ForEach-Object { "$($_.Status) $($_.Id) $($_.Message)" }) -join [Environment]::NewLine
+            Invoke-AITaskPlan -Context $context -Tasks $tasks -Logger $uiLogger
+            Export-AIRunReport -Context $context -Tasks $tasks -Logger $uiLogger
         }
         catch {
-            $output.Text = $_.Exception.Message
-            Write-AILog -Logger $Logger -Level 'ERROR' -Message $_.Exception.Message
+            $errorLogger = if ($uiLogger) { $uiLogger } else { $Logger }
+            Write-AILog -Logger $errorLogger -Level 'ERROR' -Message $_.Exception.Message
         }
         finally {
             $runButton.Enabled = $true
