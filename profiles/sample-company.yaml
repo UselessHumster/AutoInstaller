@@ -43,7 +43,7 @@
       "name": "Google Chrome",
       "installer": {
         "type": "msi",
-        "path": "../installers/chrome/GoogleChromeStandaloneEnterprise64.msi",
+        "path": "../installers/GoogleChromeStandaloneEnterprise64.msi",
         "arguments": "/qn /norestart"
       },
       "detection": {
@@ -56,7 +56,7 @@
       "name": "7-Zip",
       "installer": {
         "type": "msi",
-        "path": "../installers/7zip/7z.msi",
+        "path": "../installers/7z.msi",
         "arguments": "/qn /norestart"
       },
       "detection": {
@@ -69,8 +69,9 @@
       "name": "Adobe Reader",
       "installer": {
         "type": "exe",
-        "path": "../installers/adobe-reader/AcroRdrDC.exe",
+        "path": "../installers/AcroRdrDC.exe",
         "arguments": "/sAll /rs /rps /msi EULA_ACCEPT=YES",
+        "copyToTemp": true,
         "continueWhenDetected": true,
         "timeoutSeconds": 1200,
         "stopProcessesOnDetected": [
@@ -90,7 +91,7 @@
       "name": "OpenVPN Community",
       "installer": {
         "type": "msi",
-        "path": "../installers/openvpn/OpenVPN.msi",
+        "path": "../installers/OpenVPN.msi",
         "arguments": "/qn /norestart"
       },
       "detection": {
