@@ -57,18 +57,15 @@ function New-AIRunContext {
         [string]$ProfilePath,
         [string]$DepartmentId,
         [string]$ComputerName,
-        [switch]$DryRun
+        [switch]$DryRun,
+        [switch]$NoPrompt
     )
 
     $department = Get-AIDepartment -Profile $Profile -DepartmentId $DepartmentId
-    if ([string]::IsNullOrWhiteSpace($ComputerName)) {
+    if (-not $NoPrompt -and [string]::IsNullOrWhiteSpace($ComputerName)) {
         $ComputerName = Read-Host 'Computer name'
     }
-
     $domainCredential = $null
-    if (-not $DryRun -and $department.domain -and $department.domain.name) {
-        $domainCredential = Get-Credential -Message "Credentials for joining $($department.domain.name)"
-    }
 
     $programData = if ($env:ProgramData) { $env:ProgramData } else { Join-Path (Get-Location) '.autoinstaller' }
 

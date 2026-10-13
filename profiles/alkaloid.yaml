@@ -1,0 +1,133 @@
+{
+  "company": "Alkaloid",
+  "windows": {
+    "inputLanguage": { "languageTag": "en-US", "inputMethodTip": "0409:00000409" },
+    "fileCopies": [
+      { "source": "../IT/copy/IT", "destination": "C:\\IT" },
+      { "source": "../IT/copy/shortcuts", "destination": "%PUBLIC%\\Desktop" }
+    ],
+    "routes": [
+      { "destinationPrefix": "10.0.0.0/8", "nextHop": "10.50.6.20" }
+    ],
+    "enableRdp": true,
+    "power": {
+      "acSleepTimeoutMinutes": 0
+    },
+    "bitLocker": {
+      "enable": true,
+      "inventoryApi": {
+        "enabled": true,
+        "url": "https://invent.datacloud.msk.ru/api/bitlocker-keys",
+        "apiKey": "",
+        "apiKeyEnvironmentVariable": "AUTOINSTALLER_INVENTORY_API_KEY",
+        "apiKeyFile": "../runtime/inventory-api-key.txt",
+        "apiKeyFileFormat": "text"
+      }
+    }
+  },
+  "departments": [
+    {
+      "id": "office",
+      "displayName": "Alkaloid - Office",
+      "domain": {
+        "name": "alkaloidad.local",
+        "ouPath": ""
+      },
+      "software": ["chrome", "7zip", "office2019", "sccm", "teamviewer", "telegram", "happ", "sep-office"]
+    },
+    {
+      "id": "roaming",
+      "displayName": "Alkaloid - Roaming",
+      "domain": {
+        "name": "alkaloidad.local",
+        "ouPath": ""
+      },
+      "software": ["chrome", "7zip", "office2019", "sccm", "teamviewer", "telegram", "happ", "sep-roaming"]
+    }
+  ],
+  "software": [
+    {
+      "id": "telegram",
+      "name": "Telegram Desktop",
+      "installer": {
+        "type": "exe",
+        "path": "../installers/TelegramSetup.exe",
+        "arguments": "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /DIR=\"C:\\Program Files\\Telegram Desktop\"",
+        "detectionTimeoutSeconds": 30
+      },
+      "detection": {
+        "type": "file",
+        "path": "C:\\Program Files\\Telegram Desktop\\Telegram.exe"
+      }
+    },
+    {
+      "id": "happ",
+      "name": "Happ",
+      "installer": {
+        "type": "bat",
+        "path": "../scripts/Install-HappMsi.cmd",
+        "arguments": "",
+        "detectionTimeoutSeconds": 30
+      },
+      "detection": {
+        "type": "uninstall",
+        "name": "Happ (AutoInstaller MSI)"
+      }
+    },
+    {
+      "id": "7zip",
+      "name": "7-Zip",
+      "installer": { "type": "msi", "path": "../installers/7z2604-x64.msi", "arguments": "/qn /norestart", "detectionTimeoutSeconds": 30 },
+      "detection": { "type": "file", "path": "C:\\Program Files\\7-Zip\\7zFM.exe" }
+    },
+    {
+      "id": "office2019",
+      "name": "Office Professional Plus 2019",
+      "installer": { "type": "bat", "path": "../scripts/Install-AlkaloidOffice.bat", "arguments": "", "detectionTimeoutSeconds": 120 },
+      "detection": { "type": "file", "path": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE" }
+    },
+    {
+      "id": "sccm",
+      "name": "SCCM Client",
+      "installer": { "type": "exe", "path": "../installers/SCCM-Client/ccmsetup.exe", "arguments": "/noservice", "detectionTimeoutSeconds": 600 },
+      "detection": { "type": "service", "name": "CcmExec" }
+    },
+    {
+      "id": "teamviewer",
+      "name": "TeamViewer Host",
+      "installer": { "type": "exe", "path": "../installers/TeamViewer_Host_Setup_x64.exe", "arguments": "/S", "detectionTimeoutSeconds": 120 },
+      "detection": { "type": "service", "name": "TeamViewer" }
+    },
+    {
+      "id": "sep-office",
+      "name": "Symantec Endpoint Protection - Office",
+      "installer": { "type": "exe", "path": "../installers/SEP-Antivirus/RU8-office/setup.exe", "arguments": "", "detectionTimeoutSeconds": 600 },
+      "detection": { "type": "service", "name": "SepMasterService" }
+    },
+    {
+      "id": "sep-roaming",
+      "name": "Symantec Endpoint Protection - Roaming",
+      "installer": { "type": "exe", "path": "../installers/SEP-Antivirus/RU8-roaming/setup.exe", "arguments": "", "detectionTimeoutSeconds": 600 },
+      "detection": { "type": "service", "name": "SepMasterService" }
+    },
+    {
+      "id": "corpdesk",
+      "name": "CorpDesk (optional)",
+      "installer": { "type": "msi", "path": "../installers/CorpDesk-1.4.9.msi", "arguments": "/qn /norestart" },
+      "detection": { "type": "service", "name": "CorpDesk" }
+    },
+    {
+      "id": "chrome",
+      "name": "Google Chrome",
+      "installer": {
+        "type": "msi",
+        "path": "../installers/GoogleChromeStandaloneEnterprise64.msi",
+        "arguments": "/qn /norestart"
+      },
+      "detection": {
+        "type": "registry",
+        "path": "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\chrome.exe"
+      }
+    }
+  ]
+}

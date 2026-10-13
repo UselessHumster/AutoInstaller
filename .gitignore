@@ -56,3 +56,7 @@ Thumbs.db
 Desktop.ini
 .vscode/
 .idea/
+
+# Runtime credentials kept on the portable drive
+.env
+runtime/
