@@ -142,6 +142,54 @@ function Send-AIBitLockerInventoryRecord {
     }
 }
 
+function Set-AIStaticRoutes {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][object]$Context)
+
+    $routes = @(Get-AIObjectProperty -InputObject $Context.Profile.windows -Name 'routes' -DefaultValue @())
+    foreach ($route in $routes) {
+        $prefix = [string]$route.destinationPrefix
+        $gateway = [string]$route.nextHop
+        Invoke-AICommand -Context $Context -Description "Ensure persistent route $prefix via $gateway" -ScriptBlock {
+            $interfaces = @(Find-NetRoute -RemoteIPAddress $gateway -ErrorAction Stop | Where-Object { $_.PSObject.Properties['IPAddress'] })
+            if ($interfaces.Count -ne 1) {
+                throw "Cannot determine interface for route gateway $gateway."
+            }
+            $interfaceIndex = $interfaces[0].InterfaceIndex
+            foreach ($store in @('PersistentStore', 'ActiveStore')) {
+                $existing = @(Get-NetRoute -DestinationPrefix $prefix -PolicyStore $store -ErrorAction SilentlyContinue | Where-Object { $_.NextHop -eq $gateway -and $_.InterfaceIndex -eq $interfaceIndex })
+                if ($existing.Count -eq 0) {
+                    if ($store -eq 'PersistentStore') {
+                        # New-NetRoute rejects an explicit PersistentStore on some Windows versions.
+                        # route.exe -p records the route persistently and activates it immediately.
+                        $parts = $prefix.Split('/')
+                        if ($parts.Count -ne 2 -or [int]$parts[1] -lt 0 -or [int]$parts[1] -gt 32) {
+                            throw "Invalid IPv4 route prefix: $prefix"
+                        }
+                        $bits = [int]$parts[1]
+                        $mask = (@(0..3 | ForEach-Object {
+                            $count = [Math]::Min(8, [Math]::Max(0, $bits - 8 * $_))
+                            [int](256 - [Math]::Pow(2, 8 - $count))
+                        }) -join '.')
+                        $output = & route.exe -p ADD $parts[0] MASK $mask $gateway IF $interfaceIndex 2>&1
+                        if ($LASTEXITCODE -ne 0) {
+                            throw "Persistent route creation failed: $prefix via $gateway. $output"
+                        }
+                    }
+                    else {
+                        New-NetRoute -DestinationPrefix $prefix -NextHop $gateway -InterfaceIndex $interfaceIndex -PolicyStore ActiveStore -ErrorAction Stop | Out-Null
+                    }
+                }
+            }
+            foreach ($store in @('PersistentStore', 'ActiveStore')) {
+                $verified = @(Get-NetRoute -DestinationPrefix $prefix -PolicyStore $store -ErrorAction Stop | Where-Object { $_.NextHop -eq $gateway })
+                if ($verified.Count -eq 0) { throw "Route verification failed in ${store}: $prefix via $gateway" }
+            }
+            "Route ready: $prefix via $gateway"
+        }
+    }
+}
+
 function Set-AIPowerPolicy {
     [CmdletBinding()]
     param([Parameter(Mandatory)][object]$Context)
@@ -199,6 +247,23 @@ function Join-AIDomain {
     $targetName = $Context.ComputerName
 
     Invoke-AICommand -Context $Context -Description "Join domain $domainName" -ScriptBlock {
+        $system = Get-CimInstance Win32_ComputerSystem -ErrorAction Stop
+        if ($system.PartOfDomain) {
+            if ($system.Domain -ine $domainName) { throw "Computer already belongs to another domain: $($system.Domain)" }
+            Rename-AIComputer -Context $Context
+            return "Already joined to $domainName; restart if computer was renamed."
+        }
+        $routes = @(Get-AIObjectProperty -InputObject $Context.Profile.windows -Name 'routes' -DefaultValue @())
+        foreach ($route in $routes) {
+            $ready = @(Get-NetRoute -DestinationPrefix $route.destinationPrefix -ErrorAction SilentlyContinue | Where-Object { $_.NextHop -eq $route.nextHop })
+            if ($ready.Count -eq 0) { throw "Domain join blocked: required route $($route.destinationPrefix) via $($route.nextHop) is missing." }
+        }
+        $null = & nltest.exe "/dsgetdc:$domainName" /force 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "Domain controller discovery failed for $domainName. Check routes, DNS and domain connectivity." }
+        if (-not $credential) {
+            $credential = Get-Credential -Message "Credentials for joining $domainName"
+            if (-not $credential) { throw 'Domain credentials were not supplied.' }
+        }
         $params = @{
             DomainName = $domainName
             Credential = $credential
@@ -210,7 +275,8 @@ function Join-AIDomain {
         if (-not [string]::IsNullOrWhiteSpace($targetName) -and $env:COMPUTERNAME -ne $targetName) {
             $params.NewName = $targetName
         }
-        Add-Computer @params
+        Add-Computer @params -ErrorAction Stop
+        return "Joined $domainName; restart required."
     }
 }
 
@@ -269,4 +335,45 @@ function Enable-AIBitLocker {
     }
 }
 
-Export-ModuleMember -Function Set-AIPowerPolicy, Enable-AIRemoteDesktop, Rename-AIComputer, Join-AIDomain, Enable-AIBitLocker
+function Set-AIInputLanguage {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][object]$Context)
+    $settings = $Context.Profile.windows.inputLanguage
+    Invoke-AICommand -Context $Context -Description "Set $($settings.languageTag) first and default input method $($settings.inputMethodTip) for current user" -ScriptBlock {
+        $languages = Get-WinUserLanguageList
+        $preferred = New-WinUserLanguageList -Language $settings.languageTag
+        $preferred[0].InputMethodTips.Clear()
+        $preferred[0].InputMethodTips.Add([string]$settings.inputMethodTip)
+        foreach ($language in $languages) {
+            if ($language.LanguageTag -ine $settings.languageTag) { $preferred.Add($language) }
+        }
+        Set-WinUserLanguageList -LanguageList $preferred -Force
+        Set-WinDefaultInputMethodOverride -InputTip $settings.inputMethodTip
+        return 'Default input configured for current user; other languages preserved.'
+    }
+}
+
+function Copy-AIProfileFiles {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][object]$Context)
+    $copies = @($Context.Profile.windows.fileCopies)
+    foreach ($copy in $copies) {
+        $source = Resolve-AIPath -BasePath $Context.ProfilePath -Path $copy.source
+        if (-not $Context.DryRun -and -not (Test-Path -LiteralPath $source -PathType Container)) {
+            throw "Copy source directory not found: $source"
+        }
+    }
+    foreach ($copy in $copies) {
+        $source = Resolve-AIPath -BasePath $Context.ProfilePath -Path $copy.source
+        $destination = [Environment]::ExpandEnvironmentVariables([string]$copy.destination)
+        Invoke-AICommand -Context $Context -Description "Copy $source to $destination" -ScriptBlock {
+            New-Item -ItemType Directory -Path $destination -Force | Out-Null
+            foreach ($item in @(Get-ChildItem -LiteralPath $source -Force)) {
+                Copy-Item -LiteralPath $item.FullName -Destination $destination -Recurse -Force -ErrorAction Stop
+            }
+            return "Files copied to $destination."
+        }
+    }
+}
+
+Export-ModuleMember -Function Set-AIInputLanguage, Copy-AIProfileFiles, Set-AIStaticRoutes, Set-AIPowerPolicy, Enable-AIRemoteDesktop, Rename-AIComputer, Join-AIDomain, Enable-AIBitLocker

@@ -41,6 +41,9 @@ function Test-AISoftwareInstalled {
             $command = Get-Command ([string]$Software.detection.command) -ErrorAction SilentlyContinue
             return [bool]$command
         }
+        'service' {
+            return [bool](Get-Service -Name ([string]$Software.detection.name) -ErrorAction SilentlyContinue)
+        }
         default {
             return $false
         }
@@ -71,6 +74,7 @@ function Install-AISoftware {
     $stopProcessesOnDetected = @(Get-AIPropertyValue -InputObject $Software.installer -Name 'stopProcessesOnDetected' -DefaultValue @())
     $timeoutSeconds = [int](Get-AIPropertyValue -InputObject $Software.installer -Name 'timeoutSeconds' -DefaultValue 0)
     $copyToTemp = [bool](Get-AIPropertyValue -InputObject $Software.installer -Name 'copyToTemp' -DefaultValue $false)
+    $detectionTimeoutSeconds = [int](Get-AIPropertyValue -InputObject $Software.installer -Name 'detectionTimeoutSeconds' -DefaultValue 0)
 
     Invoke-AICommand -Context $Context -Description "Install $($Software.name)" -ScriptBlock {
         $startedAt = Get-Date
@@ -94,8 +98,22 @@ function Install-AISoftware {
                 $msiArgs = "/i `"$effectiveInstallerPath`" $arguments"
                 $process = Start-Process -FilePath 'msiexec.exe' -ArgumentList $msiArgs -PassThru
             }
+            elseif ($kind -eq 'bat') {
+                $process = Start-Process -FilePath $env:ComSpec -ArgumentList "/d /s /c `"`"$effectiveInstallerPath`" $arguments`"" -WorkingDirectory (Split-Path -Parent $effectiveInstallerPath) -PassThru
+            }
+            elseif ($kind -eq 'exe') {
+                $startParameters = @{
+                    FilePath = $effectiveInstallerPath
+                    WorkingDirectory = Split-Path -Parent $effectiveInstallerPath
+                    PassThru = $true
+                }
+                if (-not [string]::IsNullOrWhiteSpace($arguments)) {
+                    $startParameters.ArgumentList = $arguments
+                }
+                $process = Start-Process @startParameters
+            }
             else {
-                $process = Start-Process -FilePath $effectiveInstallerPath -ArgumentList $arguments -PassThru
+                throw "Unsupported installer type: $kind"
             }
 
             while (-not $process.HasExited) {
@@ -131,8 +149,19 @@ function Install-AISoftware {
                 }
             }
 
+            $process.WaitForExit()
             if ($process.ExitCode -notin @(0, 3010, 1641)) {
                 throw "Installer failed with exit code $($process.ExitCode): $($Software.name)"
+            }
+
+            if ($detectionTimeoutSeconds -gt 0) {
+                $deadline = (Get-Date).AddSeconds($detectionTimeoutSeconds)
+                while (-not (Test-AISoftwareInstalled -Software $Software)) {
+                    if ((Get-Date) -ge $deadline) {
+                        throw "Installer exited but installed-state detection failed: $($Software.name)"
+                    }
+                    Start-Sleep -Seconds 2
+                }
             }
 
             if ($process.ExitCode -in @(3010, 1641)) {

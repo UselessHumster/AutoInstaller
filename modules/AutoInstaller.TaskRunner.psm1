@@ -25,6 +25,17 @@ function New-AITaskPlan {
 
     $tasks = [System.Collections.Generic.List[object]]::new()
 
+    if ($Context.Profile.windows.PSObject.Properties['routes']) {
+        $tasks.Add((New-AITask -Id 'windows.routes' -Name 'Configure static routes' -Group 'Windows' -Action { Set-AIStaticRoutes -Context $Context }))
+    }
+
+    if ($Context.Profile.windows.PSObject.Properties['inputLanguage']) {
+        $tasks.Add((New-AITask -Id 'windows.inputLanguage' -Name 'English as default input language' -Group 'Windows' -Action { Set-AIInputLanguage -Context $Context }))
+    }
+    if ($Context.Profile.windows.PSObject.Properties['fileCopies']) {
+        $tasks.Add((New-AITask -Id 'windows.fileCopies' -Name 'Copy IT files and public desktop shortcuts' -Group 'Windows' -Action { Copy-AIProfileFiles -Context $Context }))
+    }
+
     if ($Context.Profile.windows.power) {
         $tasks.Add((New-AITask -Id 'windows.power' -Name 'Power policy' -Group 'Windows' -Action { Set-AIPowerPolicy -Context $Context }))
     }

@@ -21,7 +21,7 @@ function Start-AIWinFormsUi {
     $form = [System.Windows.Forms.Form]::new()
     $form.Text = "AutoInstaller - $($Profile.company)"
     $form.Width = 760
-    $form.Height = 560
+    $form.Height = 760
     $form.StartPosition = 'CenterScreen'
 
     $departmentLabel = [System.Windows.Forms.Label]::new()
@@ -65,9 +65,27 @@ function Start-AIWinFormsUi {
     $dryRunCheck.Checked = [bool]$DryRun
     $form.Controls.Add($dryRunCheck)
 
+    $taskList = [System.Windows.Forms.CheckedListBox]::new()
+    $taskList.Left = 16
+    $taskList.Top = 88
+    $taskList.Width = 700
+    $taskList.Height = 184
+    $taskList.CheckOnClick = $true
+    $taskList.DisplayMember = 'Name'
+    $form.Controls.Add($taskList)
+    $refreshTasks = {
+        $taskList.Items.Clear()
+        $preview = New-AIRunContext -Profile $Profile -ProfilePath $ProfilePath -DepartmentId ([string]$departmentBox.SelectedItem) -NoPrompt -DryRun
+        foreach ($task in @(New-AITaskPlan -Context $preview)) {
+            [void]$taskList.Items.Add($task, $true)
+        }
+    }
+    $departmentBox.Add_SelectedIndexChanged($refreshTasks)
+    & $refreshTasks
+
     $output = [System.Windows.Forms.TextBox]::new()
     $output.Left = 16
-    $output.Top = 88
+    $output.Top = 288
     $output.Width = 700
     $output.Height = 368
     $output.Multiline = $true
@@ -78,14 +96,14 @@ function Start-AIWinFormsUi {
     $runButton = [System.Windows.Forms.Button]::new()
     $runButton.Text = 'Run'
     $runButton.Left = 16
-    $runButton.Top = 472
+    $runButton.Top = 672
     $runButton.Width = 120
     $form.Controls.Add($runButton)
 
     $closeButton = [System.Windows.Forms.Button]::new()
     $closeButton.Text = 'Close'
     $closeButton.Left = 596
-    $closeButton.Top = 472
+    $closeButton.Top = 672
     $closeButton.Width = 120
     $closeButton.Add_Click({ $form.Close() })
     $form.Controls.Add($closeButton)
@@ -115,8 +133,15 @@ function Start-AIWinFormsUi {
                 }
             }
 
-            $context = New-AIRunContext -Profile $Profile -ProfilePath $ProfilePath -DepartmentId ([string]$departmentBox.SelectedItem) -ComputerName $computerNameBox.Text -DryRun:$($dryRunCheck.Checked)
-            $tasks = New-AITaskPlan -Context $context
+            $context = New-AIRunContext -Profile $Profile -ProfilePath $ProfilePath -DepartmentId ([string]$departmentBox.SelectedItem) -ComputerName $computerNameBox.Text -NoPrompt -DryRun:$($dryRunCheck.Checked)
+            $selectedIds = @($taskList.CheckedItems | ForEach-Object { $_.Id })
+            $tasks = @(New-AITaskPlan -Context $context | Where-Object { $_.Id -in $selectedIds })
+            if ($tasks.Count -eq 0) { throw 'Select at least one task.' }
+            $departmentBox.Enabled = $false
+            $taskList.Enabled = $false
+            $computerNameBox.Enabled = $false
+            $dryRunCheck.Enabled = $false
+            $closeButton.Enabled = $false
             Invoke-AITaskPlan -Context $context -Tasks $tasks -Logger $uiLogger
             Export-AIRunReport -Context $context -Tasks $tasks -Logger $uiLogger
         }
@@ -126,6 +151,11 @@ function Start-AIWinFormsUi {
         }
         finally {
             $runButton.Enabled = $true
+            $departmentBox.Enabled = $true
+            $taskList.Enabled = $true
+            $computerNameBox.Enabled = $true
+            $dryRunCheck.Enabled = $true
+            $closeButton.Enabled = $true
         }
     })
 
