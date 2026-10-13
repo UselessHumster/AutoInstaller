@@ -30,7 +30,7 @@
         "name": "alkaloidad.local",
         "ouPath": ""
       },
-      "software": ["chrome", "7zip", "office2019", "sccm", "teamviewer", "sep-office"]
+      "software": ["chrome", "7zip", "office2019", "sccm", "teamviewer", "telegram", "happ", "sep-office"]
     },
     {
       "id": "roaming",
@@ -39,10 +39,38 @@
         "name": "alkaloidad.local",
         "ouPath": ""
       },
-      "software": ["chrome", "7zip", "office2019", "sccm", "teamviewer", "sep-roaming"]
+      "software": ["chrome", "7zip", "office2019", "sccm", "teamviewer", "telegram", "happ", "sep-roaming"]
     }
   ],
   "software": [
+    {
+      "id": "telegram",
+      "name": "Telegram Desktop",
+      "installer": {
+        "type": "exe",
+        "path": "../installers/TelegramSetup.exe",
+        "arguments": "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /DIR=\"C:\\Program Files\\Telegram Desktop\"",
+        "detectionTimeoutSeconds": 30
+      },
+      "detection": {
+        "type": "file",
+        "path": "C:\\Program Files\\Telegram Desktop\\Telegram.exe"
+      }
+    },
+    {
+      "id": "happ",
+      "name": "Happ (installation wizard)",
+      "installer": {
+        "type": "exe",
+        "path": "../installers/HappSetup.exe",
+        "arguments": "",
+        "detectionTimeoutSeconds": 30
+      },
+      "detection": {
+        "type": "uninstall",
+        "name": "Happ*"
+      }
+    },
     {
       "id": "7zip",
       "name": "7-Zip",

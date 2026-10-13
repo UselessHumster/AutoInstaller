@@ -54,3 +54,7 @@ Keep corporate payloads locally; they are not required to be stored in Git.
 The graphical launcher lists profile tasks with checkboxes before execution.
 Changing the department rebuilds the list and checks all its tasks. Only checked
 tasks run; domain credentials are requested by the selected domain join task.
+
+`detection.type: uninstall` checks application `DisplayName` in the Windows
+uninstall registry entries (HKLM and HKCU, native and WOW6432Node).
+`detection.name` is a PowerShell wildcard pattern, for example `Happ*`.

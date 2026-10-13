@@ -22,6 +22,8 @@ installers/
   GoogleChromeStandaloneEnterprise64.msi
   7z2604-x64.msi
   TeamViewer_Host_Setup_x64.exe
+  TelegramSetup.exe
+  HappSetup.exe
   CorpDesk-1.4.9.msi
   MSOffice2019/ (setup.exe, office2019.xml, Office/Data/...)
   SCCM-Client/ (ccmsetup.exe, x64/ и остальные файлы)
@@ -30,6 +32,22 @@ installers/
 ```
 
 Office запускается через `scripts/Install-AlkaloidOffice.bat`: это переносимый аналог исходного `install.bat`, в котором был жёсткий путь `C:\MSOffice2019`. Используется существующий `office2019.xml`; с его `Display Level="Full"` интерфейс Office будет виден. Папка `Office/Data` должна оставаться рядом с setup.exe.
+
+Telegram и Happ включены в оба сценария и доступны отдельными галочками.
+Скачайте Windows x64 EXE-установщики с [сайта Telegram](https://desktop.telegram.org/)
+и [сайта Happ](https://www.happ.su/main/ru) и переименуйте их в
+`installers/TelegramSetup.exe` и `installers/HappSetup.exe`. Нужны установщики,
+а не portable-сборки.
+
+Telegram запускается в тихом режиме Inno Setup, без перезагрузки и запуска приложения,
+с каталогом `C:\Program Files\Telegram Desktop`, чтобы бинарные файлы были доступны
+будущему пользователю. Проверяется наличие `Telegram.exe` в этом каталоге.
+Штатные ярлыки установщика могут относиться к текущему администратору.
+
+Happ запускается с обычным мастером: подтверждённые параметры тихой установки для
+его EXE пока отсутствуют. Завершите мастер, затем AutoInstaller продолжит задачи.
+Повторная установка пропускается при наличии записи `Happ*` в списке удаления
+программ HKLM/HKCU. Подписки и настройки подключений вручную задаются после установки.
 
 SCCM запускается через `ccmsetup.exe /noservice` с ожиданием процесса и появления `CcmExec`. Назначение сайта и связь с management point нужно проверить отдельно по корпоративной конфигурации. `scepinstall.exe` из каталога SCCM не запускается.
 

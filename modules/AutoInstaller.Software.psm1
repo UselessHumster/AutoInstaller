@@ -37,6 +37,25 @@ function Test-AISoftwareInstalled {
             }
             return Test-Path -LiteralPath ([string]$Software.detection.path)
         }
+        'uninstall' {
+            if ($env:OS -ne 'Windows_NT') { return $false }
+            $paths = @(
+                'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
+                'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall',
+                'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
+                'HKCU:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+            )
+            foreach ($path in $paths) {
+                foreach ($key in @(Get-ChildItem -LiteralPath $path -ErrorAction SilentlyContinue)) {
+                    $entry = Get-ItemProperty -LiteralPath $key.PSPath -ErrorAction SilentlyContinue
+                    if ($entry -and $entry.PSObject.Properties['DisplayName'] -and
+                        $entry.DisplayName -like [string]$Software.detection.name) {
+                        return $true
+                    }
+                }
+            }
+            return $false
+        }
         'command' {
             $command = Get-Command ([string]$Software.detection.command) -ErrorAction SilentlyContinue
             return [bool]$command
