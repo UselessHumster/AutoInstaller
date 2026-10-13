@@ -62,16 +62,16 @@
     },
     {
       "id": "happ",
-      "name": "Happ (installation wizard)",
+      "name": "Happ",
       "installer": {
-        "type": "exe",
-        "path": "../installers/HappSetup.exe",
+        "type": "bat",
+        "path": "../scripts/Install-HappMsi.cmd",
         "arguments": "",
         "detectionTimeoutSeconds": 30
       },
       "detection": {
         "type": "uninstall",
-        "name": "Happ*"
+        "name": "Happ (AutoInstaller MSI)"
       }
     },
     {
