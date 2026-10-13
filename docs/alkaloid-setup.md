@@ -85,7 +85,7 @@ CorpDesk есть в каталоге пакетов, но исключён из
 - При необходимости ручной установки SEP исходные сетевые каталоги:
   - Office: `\\srvrusfs\Helpdesk_Install\Install_New_PC\03. SEP antivirus\RU8-office`.
   - Roaming: `\\srvrusfs\Helpdesk_Install\Install_New_PC\03. SEP antivirus\RU8-roaming`.
-  
+
   Профиль использует локальные копии `installers/SEP-Antivirus/RU8-office/setup.exe` и `installers/SEP-Antivirus/RU8-roaming/setup.exe`.
 
 ## После входа сотрудника
@@ -97,7 +97,7 @@ CorpDesk есть в каталоге пакетов, но исключён из
 
 ## Активация Windows и Office, выбор OU
 
-Кому: `sysadmins@alkaloid.com.mk`  
+Кому: `sysadmins@alkaloid.com.mk`
 Копия: `ithelpdeskrus@alkaloid.ru`
 
 Подставить имя компьютера, выбрать `Roaming OU` или `Office OU` и указать данные TeamViewer по принятому защищённому каналу. Шаблон без паролей:
