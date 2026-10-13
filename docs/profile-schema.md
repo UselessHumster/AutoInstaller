@@ -11,7 +11,7 @@ The included sample is JSON-compatible YAML, so it works even when `ConvertFrom-
 - `windows.routes`: optional list of `{ "destinationPrefix": "10.0.0.0/8", "nextHop": "10.50.6.20" }`. Ensures persistent and active routes before domain join; chooses the interface used to reach the gateway. Existing unrelated routes are preserved.
 - `windows.power.acSleepTimeoutMinutes`: AC sleep timeout. Use `0` to disable sleep on AC power.
 - `windows.bitLocker.enable`: enables BitLocker on the system drive.
-- `windows.bitLocker.inventoryApi.enabled`: optional. Sends serial number and recovery key to an inventory API when enabled.
+- `windows.bitLocker.inventoryApi.enabled`: optional. Sends device name, serial number and recovery key to an inventory API when enabled.
 - `windows.bitLocker.inventoryApi.url`: inventory API endpoint, for example `https://invent.datacloud.msk.ru/api/bitlocker-keys`.
 - `windows.bitLocker.inventoryApi.apiKey`: runtime API key placeholder sent only in the `X-API-Key` header. Keep real secrets out of committed profiles.
 - `departments`: department-specific domain and software selection.
@@ -58,3 +58,14 @@ tasks run; domain credentials are requested by the selected domain join task.
 `detection.type: uninstall` checks application `DisplayName` in the Windows
 uninstall registry entries (HKLM and HKCU, native and WOW6432Node).
 `detection.name` is a PowerShell wildcard pattern, for example `Happ*`.
+
+`windows.bitLocker.inventoryApi.apiKeyEnvironmentVariable` names a process
+environment variable holding the API key. `apiKeyFile` resolves relative to the profile. With `apiKeyFileFormat: text`,
+it is a portable runtime text file excluded from Git. Default format `dpapi`
+expects a Windows SecureString exported with `Export-Clixml` for the same user
+and machine.
+If neither runtime source is present, the key is requested securely at execution.
+The API receives `device_name` from Windows configured computer name, including
+a pending rename; a requested name that was not applied blocks the BitLocker task.
+For new encryption, recovery information is saved and escrowed before enabling
+TPM protection. API transport failures are logged without response bodies or keys.

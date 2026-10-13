@@ -14,11 +14,14 @@
       "acSleepTimeoutMinutes": 0
     },
     "bitLocker": {
-      "enable": false,
+      "enable": true,
       "inventoryApi": {
-        "enabled": false,
-        "url": "",
-        "apiKey": ""
+        "enabled": true,
+        "url": "https://invent.datacloud.msk.ru/api/bitlocker-keys",
+        "apiKey": "",
+        "apiKeyEnvironmentVariable": "AUTOINSTALLER_INVENTORY_API_KEY",
+        "apiKeyFile": "../runtime/inventory-api-key.txt",
+        "apiKeyFileFormat": "text"
       }
     }
   },
